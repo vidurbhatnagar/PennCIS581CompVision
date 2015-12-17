@@ -35,4 +35,3 @@ for i=1:size(H,1)
     H(i,1)=H(i,1) + sum((rightBinProp(rightloc))'*gradMags(rightloc));
 end
 end
-

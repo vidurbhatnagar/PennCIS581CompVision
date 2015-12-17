@@ -1,2 +1,2 @@
-# PennCIS581CompVision
-University of Pennsylvania - CIS 581 - Computer Vision &amp; Computational Photography - Fall 2015
+# PennCIS81ComputerVisionAndComputationalPhotography
+University of Pennsylvania - CIS 581- Computer Vision and Computation Photography - Fall 2015

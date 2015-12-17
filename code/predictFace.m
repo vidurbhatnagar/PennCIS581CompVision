@@ -1,20 +1,14 @@
-function [ boundingBoxes ] = predictFace( img, windowSize, numBins, signed, cellSize, blockSize, model)
+function [ boundingBoxes ] = predictFace( img, windowSize, numBins, signed, cellSize, blockSize, blockStride, model)
     [gradAngles, gradMags] = computeImageGradients(img,0);
-    yNumWindows = size(img,1)/windowSize(1);
-    xNumWindows = size(img,2)/windowSize(2);
+    %yNumWindows = size(img,1)/windowSize(1);
+    %xNumWindows = size(img,2)/windowSize(2);
+    yStartCell = 1;
+    yEndCell = yStartCell + windowSize(2)-1;
     boundingBoxes = [];
-    for row=1:yNumWindows
-        yStartCell = (row-1)*windowSize(2)+1;
-        yEndCell =  yStartCell + windowSize(2)-1;
-        for col=1:xNumWindows
-            xStartCell = (col-1)*windowSize(1)+1;
-            xEndCell = xStartCell + windowSize(1)-1;
-            if ( yEndCell > size(img,1))
-                continue;
-            end
-            if ( xEndCell > size(img,2))
-                continue;
-            end
+    while( yEndCell < size(img,1) )
+        xStartCell = 1;
+        xEndCell = xStartCell + windowSize(1)-1;
+        while( xEndCell < size(img,2) )
             %cellvals = [yStartCell yEndCell xStartCell xEndCell]
             gradAng = gradAngles(yStartCell:yEndCell,xStartCell:xEndCell);
             gradMag = gradMags(yStartCell:yEndCell,xStartCell:xEndCell);
@@ -24,7 +18,11 @@ function [ boundingBoxes ] = predictFace( img, windowSize, numBins, signed, cell
             if ( prediction == 1)
                 boundingBoxes = [boundingBoxes; [xStartCell yStartCell windowSize(2) windowSize(1)]];
             end
+            xStartCell = xStartCell + blockStride;
+            xEndCell = xStartCell + windowSize(2)-1;
         end
+        yStartCell = yStartCell + blockStride;
+        yEndCell = yStartCell + windowSize(1)-1;
     end
 end
 
