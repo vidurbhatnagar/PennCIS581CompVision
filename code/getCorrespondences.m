@@ -66,13 +66,13 @@ for i=0.1:0.05:0.7
         end
         
         % Face Refinement .... need to relook
-        oldFaceBox = faceBox;
+        %oldFaceBox = faceBox;
         face=imcrop(frame,faceBox);
-        faceBox = step(faceDetector,face);
-        face=imcrop(face,faceBox);
-        faceBox(1,:) = faceBox(1,:) + oldFaceBox(1,:);
-        imshow(face);
-        pause;
+        %faceBox = step(faceDetector,face);
+        %face=imcrop(face,faceBox);
+        %faceBox(1,:) = faceBox(1,1:2) + oldFaceBox(1,1:2);
+        %imshow(face);
+        %pause;
         
         %To detect Nose
 %        faceCenter = [scaledBbox(j,3) scaledBbox(j,4)]./2;          
