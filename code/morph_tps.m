@@ -15,15 +15,6 @@ bilinearB = griddedInterpolant(rowIt,colIt,I(:,:,3));
 pixelsXY = [pixelsX',pixelsY'];
 pixelsXY1 = [pixelsXY, repmat(1,totalPixels,1)];
 
-% rMatrix = zeros(totalPixels,totalControlPts);
-% for i = 1:totalPixels
-%     for j = 1:totalControlPts
-%         rMatrix(i,j) = norm((pixelsXY(i,:)-controlPts(j,:)),2);
-%     end
-% end
-% 
-% rMatrixSq2 = rMatrix.^2;
-
 % Building the matrices for TSP
 matDiff = @(pXY, cPts) bsxfun(@minus, repmat(pXY, 1, totalControlPts), repmat(cPts',totalPixels,1));
 rMatrixSq = matDiff(pixelsXY(:,1), controlPts(:,1)).^2 + matDiff(pixelsXY(:,2), controlPts(:,2)).^2;

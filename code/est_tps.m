@@ -5,14 +5,6 @@ function[a1,aX,aY,w] = est_tps(controlPts, targetValues)
 %      |a1| 
 rows = length(controlPts);
 
-% rMatrix = zeros(rows,rows);
-% for i = 1:rows
-%     for j = 1:rows
-%         rMatrix(i,j) = norm((controlPts(i,:)-controlPts(j,:)),2);
-%     end
-% end
-%rMatrixSq = rMatrix.^2;
-
 matDiff = @(cPts) repmat(cPts, 1, rows) - transpose(repmat(cPts, 1, rows));
 rMatrixSq = matDiff(controlPts(:,1)).^2 + matDiff(controlPts(:,2)).^2;
 kMatrix = rMatrixSq.*log(rMatrixSq) ;
