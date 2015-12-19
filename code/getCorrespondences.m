@@ -88,8 +88,23 @@ for i=0.1:0.05:0.7
         faceCX = size(face,1)/2 + faceBox(1);
         faceCY = size(face,2)/2 + faceBox(2);
     
+        %% Detect nose
+        noseBox=step(noseDetector,face);
+        if ( ~size(noseBox,1) )
+            continue;
+        end
+        proximity = sqrtm(sum(noseBox(:,1:2)-repmat([faceCX faceCY],size(noseBox,1),1)));
+        [~,nosePos] = min(proximity,[],1);
+        noseBox = noseBox(nosePos,:);    
+        
+        %% Operate on the NOSE
+        noseCX = noseBox(1,1) + (noseBox(1,3)/2) + faceBox(1);
+        noseCY = noseBox(1,2) + (noseBox(1,4)/2);
+    
+        eyeZone=imcrop(face,[1,1,size(face,2),noseCY]);
+    
         %Detect Eyes
-        eyeBox=step(eyeDetector,face);
+        eyeBox=step(eyeDetector,eyeZone);
         if ( ~size(eyeBox,1) )
             continue;
         end
@@ -127,19 +142,6 @@ for i=0.1:0.05:0.7
         eyeCY1 = eyeBox(1,2)+ d + faceBox(2);
         eyeCX2 = eyeBox(2,1)+ e + faceBox(1);
         eyeCY2 = eyeBox(2,2)+ f + faceBox(2);
-    
-        %% Detect nose
-        noseBox=step(noseDetector,face);
-        if ( ~size(noseBox,1) )
-            continue;
-        end
-        proximity = sqrtm(sum(noseBbox(:,1:2)-repmat([faceCX faceCY],size(noseBbox,1),1)));
-        [~,nosePos] = min(proximity,[],1);
-        noseBbox = noseBbox(nosePos,:);    
-        
-        %% Operate on the NOSE
-        noseCX = noseBox(1,1) + (noseBox(1,3)/2) + faceBox(1);
-        noseCY = noseBox(1,2) + (noseBox(1,4)/2);
     
         %% Operate on the MOUTH
         m=[1,noseCY,size(face,1),((size(face,2))-noseCY)];
