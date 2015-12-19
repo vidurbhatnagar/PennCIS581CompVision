@@ -1,4 +1,4 @@
-function [cornerX, cornerY, corres, faceBox] = getCorrespondences(frame, svmfacedetector, prevFaceBox)
+function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svmfacedetector, prevFaceBox)
     % For Detecting a face in the frame and getting face landmarks/correspondences
     % First detect a candidate faces in the image - Then use Viola Jones
     % Cascade detector to get face features
@@ -20,7 +20,7 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondences(frame, svmface
 
     %% Configurations for face detection
     displacementThresh = 50;
-    scoreThresh = 3;
+    scoreThresh = 1;
     numBins = 9;
     signed = 0;
     cellSize = [8 8];
@@ -45,11 +45,11 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondences(frame, svmface
         disp('Scale Tried:');
         disp(i);
         imgres= imresize(imggray,i);
-        [resFaceBox,scores] = detectFace(imgres, windowSize, numBins, signed, cellSize, blockSize, blockStride, svmfacedetector);
+        [resFaceBoxes,scores] = detectFace(imgres, windowSize, numBins, signed, cellSize, blockSize, blockStride, svmfacedetector);
         suppIdx = find(scores < scoreThresh );
-        resFaceBox(suppIdx,:) = [];
+        resFaceBoxes(suppIdx,:) = [];
         scores(suppIdx) = [];
-        faceBox = resFaceBox*1/i;
+        faceBoxes = resFaceBoxes*1/i;
     %     decface = insertObjectAnnotation(imgres,'rectangle',faceBbox,scores);
     %     imshow(decface);
     %     pause;
@@ -57,12 +57,23 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondences(frame, svmface
     %     imshow(fullFace);
     %     pause;
     
-        for j=1:size(faceBox,1)
+        for j=1:size(faceBoxes,1)
+            faceBox = faceBoxes(j,:);
+            
+            %% Operate on the FACE
+            faceCX = faceBox(3)/2 + faceBox(1);
+            faceCY = faceBox(4)/2 + faceBox(2);
+            
+%             fullFace = insertObjectAnnotation(frame,'rectangle',faceBox,'face');
+%             imshow(fullFace);
+
             displacement = 0;
             if ( size(prevFaceBox,1) )
-                displacement = norm(faceBox(j,1:2) - prevFaceBox);
+                prevFaceCX = prevFaceBox(3)/2 + prevFaceBox(1);
+                prevFaceCY = prevFaceBox(4)/2 + prevFaceBox(2);
+                displacement = norm([faceCX faceCY] - [prevFaceCX prevFaceCY]);
             end
-
+        
             if ( displacement > displacementThresh )
                 continue;
             end
@@ -72,40 +83,32 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondences(frame, svmface
             face=imcrop(frame,faceBox);
             %faceBox = step(faceDetector,face);
             %face=imcrop(face,faceBox);
-            %faceBox(1,:) = faceBox(1,1:2) + oldFaceBox(1,1:2);
-            %imshow(face);
-            %pause;
-
-            %To detect Nose
-    %        faceCenter = [scaledBbox(j,3) scaledBbox(j,4)]./2;          
-    %          if ( size(noseBbox) )
-    %             proximity = norm(noseBbox(:,1:2)-repmat(faceCenter,size(noseBbox,1),1));
-    %             [~,minPos] = min(proximity,[],1);
-    %             noseBbox = noseBbox(minPos,:);
-    %          end
-    %          displacement
-    %          prevFaceBbox
-    %          scaledBbox(j,:)                  
+            %faceBox(1,:) = faceBox(1,1:2) + oldFaceBox(1,1:2);     
             
-            %% Operate on the FACE
-            faceCX = size(face,1)/2 + faceBox(1);
-            faceCY = size(face,2)/2 + faceBox(2);
-
             %% Detect NOSE
             noseBox=step(noseDetector,face);
             if ( ~size(noseBox,1) )
                 continue;
             end
-            proximity = sqrtm(sum(noseBox(:,1:2)-repmat([faceCX faceCY],size(noseBox,1),1)));
+            noseCenX = noseBox(:,3)/2 + noseBox(:,1);
+            noseCenY = noseBox(:,4)/2 + noseBox(:,2);
+            
+%             fullFace = insertObjectAnnotation(face,'rectangle',noseBox,'nose');
+%             imshow(fullFace);
+%             pause;
+            proximity = sqrt(sum(abs([noseCenX noseCenY]-repmat([faceCX faceCY],size(noseCenX,1),1))));
             [~,nosePos] = min(proximity,[],1);
             noseBox = noseBox(nosePos,:);    
-
+%             fullFace = insertObjectAnnotation(face,'rectangle',noseBox,'nose');
+%             imshow(fullFace);
+%             pause;
+            
             %% Operate on the NOSE
             noseCX = noseBox(1,1) + (noseBox(1,3)/2) + faceBox(1);
             noseCY = noseBox(1,2) + (noseBox(1,4)/2);
 
             eyeZone=imcrop(face,[1,1,size(face,2),noseCY]);
-
+            
             %Detect Eyes
             eyeBox=step(eyeDetector,eyeZone);
             if ( ~size(eyeBox,1) )
@@ -146,6 +149,10 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondences(frame, svmface
             eyeCX2 = eyeBox(2,1)+ e + faceBox(1);
             eyeCY2 = eyeBox(2,2)+ f + faceBox(2);
 
+%             fullFace = insertObjectAnnotation(face,'rectangle',eyeBox,'eye');
+%             imshow(fullFace);
+%             pause;
+            
             %% Detect MOUTH 
             m=[1,noseCY,size(face,1),((size(face,2))-noseCY)];
             mouth=imcrop(face,m);
@@ -168,6 +175,10 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondences(frame, svmface
             mouthCX = mouthBox(1,1) + (mouthBox(1,3)/2) + faceBox(1);
             mouthCY = mouthBox(1,2) + (mouthBox(1,4)/2) + faceBox(2);
 
+%             fullFace = insertObjectAnnotation(face,'rectangle',mouthBox,'mouth');
+%             imshow(fullFace);
+%             pause;
+%             
             %% Get all CORRESPONDENCES
             corres =[[eyeCX1;eyeCX2;noseCX;mouthCX], [eyeCY1;eyeCY2;noseCY;mouthCY]];
 
@@ -188,13 +199,18 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondences(frame, svmface
                         allPoints(:,2)+allPoints(:,4)];
 
             %% Show all visualizations
-            imshow(frame);hold on;plot(corres(:,1),corres(:,2),'+','MarkerSize',10);
+            %imshow(frame);hold on;plot(corres(:,1),corres(:,2),'+','MarkerSize',10);
             %videoout=insertObjectAnnotation(frame,'rectangle',allPoints,'P','TextBoxOpacity',0.3,'Fontsize',9);
             %imshow(videoout);
-            pause;
+            %pause;
+            if ( size(corres,1) )
+                break;
+            end
         end
         if ( size(corres,1) )
             break;
+        else
+            faceBox = [];
         end
     end
     % ann_img = insertObjectAnnotation(image,'rectangle',faceBboxes,'Detection');
