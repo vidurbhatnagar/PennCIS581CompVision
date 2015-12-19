@@ -8,9 +8,6 @@ pixelsLinear = [1:totalPixels];
 [pixelsY,pixelsX] = ind2sub([rows,cols],pixelsLinear);
 rowIt = reshape(pixelsY,rows,cols);
 colIt = reshape(pixelsX,rows,cols);
-bilinearR = griddedInterpolant(rowIt,colIt,I(:,:,1));
-bilinearG = griddedInterpolant(rowIt,colIt,I(:,:,2));
-bilinearB = griddedInterpolant(rowIt,colIt,I(:,:,3));
 
 pixelsXY = [pixelsX',pixelsY'];
 pixelsXY1 = [pixelsXY, repmat(1,totalPixels,1)];
@@ -30,18 +27,20 @@ wMatrixY = [wY;axY;ayY;a1Y];
 IX = kMatrixXY1 * wMatrixX;
 IY = kMatrixXY1 * wMatrixY;
 
+% Cleaning the points outside of the image
 IX(IX > cols) = cols;
 IX(IX < 1) = 1;
 IY(IY > rows) = rows;
 IY(IY < 1) = 1;
 
-midImage = zeros(totalPixels,3);
-intensityR = bilinearR(IY(:),IX(:));
-intensityG = bilinearG(IY(:),IX(:));
-intensityB = bilinearB(IY(:),IX(:));
+bilinearR = griddedInterpolant(rowIt,colIt,I(:,:,1));
+bilinearG = griddedInterpolant(rowIt,colIt,I(:,:,2));
+bilinearB = griddedInterpolant(rowIt,colIt,I(:,:,3));
 
+midImage = zeros(totalPixels,3);
 midImage(:,1) = bilinearR(IY(:),IX(:));
 midImage(:,2) = bilinearG(IY(:),IX(:));
 midImage(:,3) = bilinearB(IY(:),IX(:));
+
 morphedImage  = reshape(midImage, rows, cols, 3);
 morphedImageRes = imresize(morphedImage,ISize);
