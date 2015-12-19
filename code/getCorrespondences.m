@@ -20,7 +20,7 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
 
     %% Configurations for face detection
     displacementThresh = 50;
-    scoreThresh = 1;
+    scoreThresh = 3;
     numBins = 9;
     signed = 0;
     cellSize = [8 8];
@@ -41,7 +41,7 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
     corres = [];
     cornerX = [];
     cornerY = [];
-    for i=0.1:0.05:0.7
+    for i=0.3:0.05:0.7
         disp('Scale Tried:');
         disp(i);
         imgres= imresize(imggray,i);
@@ -50,12 +50,6 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
         resFaceBoxes(suppIdx,:) = [];
         scores(suppIdx) = [];
         faceBoxes = resFaceBoxes*1/i;
-    %     decface = insertObjectAnnotation(imgres,'rectangle',faceBbox,scores);
-    %     imshow(decface);
-    %     pause;
-    %     fullFace = insertObjectAnnotation(imggray,'rectangle',scaledBbox,scores);
-    %     imshow(fullFace);
-    %     pause;
     
         for j=1:size(faceBoxes,1)
             faceBox = faceBoxes(j,:);
@@ -66,7 +60,8 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
             
 %             fullFace = insertObjectAnnotation(frame,'rectangle',faceBox,'face');
 %             imshow(fullFace);
-
+%             pause;
+%             
             displacement = 0;
             if ( size(prevFaceBox,1) )
                 prevFaceCX = prevFaceBox(3)/2 + prevFaceBox(1);
@@ -96,6 +91,7 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
 %             fullFace = insertObjectAnnotation(face,'rectangle',noseBox,'nose');
 %             imshow(fullFace);
 %             pause;
+            
             proximity = sqrt(sum(abs([noseCenX noseCenY]-repmat([faceCX faceCY],size(noseCenX,1),1))));
             [~,nosePos] = min(proximity,[],1);
             noseBox = noseBox(nosePos,:);    
@@ -160,7 +156,7 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
             %% Operate on the MOUTH
             mouthBox=step(mouthDetector,mouth);
             if ( ~size(mouthBox,1) )
-                return;
+                continue;
             end
 
             for it=1:size(mouthBox,1)
@@ -208,6 +204,7 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
             end
         end
         if ( size(corres,1) )
+            corres
             break;
         else
             faceBox = [];
