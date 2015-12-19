@@ -91,7 +91,7 @@ for i=0.1:0.05:0.7
         %Detect Eyes
         eyeBox=step(eyeDetector,face);
         if ( ~size(eyeBox,1) )
-            return;
+            continue;
         end
     
         %% Operate on the eyes   
@@ -112,6 +112,9 @@ for i=0.1:0.05:0.7
                 break;
             end
         end
+        if ( ~size(e))
+            continue;
+        end
         eyeBox(1,:) = e(1,:);
         eyeBox(2,:) = e(2,:);
     
@@ -128,9 +131,12 @@ for i=0.1:0.05:0.7
         %% Detect nose
         noseBox=step(noseDetector,face);
         if ( ~size(noseBox,1) )
-            return;
+            continue;
         end
-    
+        proximity = sqrtm(sum(noseBbox(:,1:2)-repmat([faceCX faceCY],size(noseBbox,1),1)));
+        [~,nosePos] = min(proximity,[],1);
+        noseBbox = noseBbox(nosePos,:);    
+        
         %% Operate on the NOSE
         noseCX = noseBox(1,1) + (noseBox(1,3)/2) + faceBox(1);
         noseCY = noseBox(1,2) + (noseBox(1,4)/2);
@@ -158,7 +164,7 @@ for i=0.1:0.05:0.7
         mouthCY = mouthBox(1,2) + (mouthBox(1,4)/2) + faceBox(2);
     
         %% Get all CORRESPONDENCES
-        corres =[[faceCX;eyeCX1;eyeCX2;noseCX;mouthCX], [faceCY;eyeCY1;eyeCY2;noseCY;mouthCY]];
+        corres =[[eyeCX1;eyeCX2;noseCX;mouthCX], [eyeCY1;eyeCY2;noseCY;mouthCY]];
     
         %% Get all CORNERS to build convex hull
         eyeBox(1,1:2) = eyeBox(1,1:2) + faceBox(1,1:2);
