@@ -32,8 +32,7 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
     eyeDetector = vision.CascadeObjectDetector('RightEye');
     mouthDetector = vision.CascadeObjectDetector('Mouth','MergeThreshold',20);
     noseDetector = vision.CascadeObjectDetector('Nose','MergeThreshold',16);
-    faceDetector = vision.CascadeObjectDetector();
-
+   
     %% Finding the best FACE
     imggray = rgb2gray(frame);
     imggray = im2double(imggray);
@@ -41,14 +40,19 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
     corres = [];
     cornerX = [];
     cornerY = [];
-    for i=0.3:0.05:0.7
-        disp('Scale Tried:');
-        disp(i);
+    %% Trying face detection for different scales
+    %% Returns the first face found
+    for i=0.1:0.05:0.7
         imgres= imresize(imggray,i);
+        %% Detect faces at a particular scale 
         [resFaceBoxes,scores] = detectFace(imgres, windowSize, numBins, signed, cellSize, blockSize, blockStride, svmfacedetector);
+        
+        %% Suppress faces with scores lesser than scoreThresh 
         suppIdx = find(scores < scoreThresh );
         resFaceBoxes(suppIdx,:) = [];
         scores(suppIdx) = [];
+        
+        %% Face Box size at original image scale
         faceBoxes = resFaceBoxes*1/i;
     
         for j=1:size(faceBoxes,1)
@@ -57,11 +61,9 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
             %% Operate on the FACE
             faceCX = faceBox(3)/2 + faceBox(1);
             faceCY = faceBox(4)/2 + faceBox(2);
-            
-%             fullFace = insertObjectAnnotation(frame,'rectangle',faceBox,'face');
-%             imshow(fullFace);
-%             pause;
-%             
+
+            %% Check whether the detected face is further away than a displacement Threshold 
+            %% Basically to curb detetion of other persons face is multiple faces
             displacement = 0;
             if ( size(prevFaceBox,1) )
                 prevFaceCX = prevFaceBox(3)/2 + prevFaceBox(1);
@@ -72,13 +74,9 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
             if ( displacement > displacementThresh )
                 continue;
             end
-
-            % Face Refinement .... need to relook
-            %oldFaceBox = faceBox;
+            
+            %% Crop Face Image
             face=imcrop(frame,faceBox);
-            %faceBox = step(faceDetector,face);
-            %face=imcrop(face,faceBox);
-            %faceBox(1,:) = faceBox(1,1:2) + oldFaceBox(1,1:2);     
             
             %% Detect NOSE
             noseBox=step(noseDetector,face);
@@ -88,24 +86,18 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
             noseCenX = noseBox(:,3)/2 + noseBox(:,1);
             noseCenY = noseBox(:,4)/2 + noseBox(:,2);
             
-%             fullFace = insertObjectAnnotation(face,'rectangle',noseBox,'nose');
-%             imshow(fullFace);
-%             pause;
-            
+            %% Consider nose that is nearest to face center
             proximity = sqrt(sum(abs([noseCenX noseCenY]-repmat([faceCX faceCY],size(noseCenX,1),1))));
             [~,nosePos] = min(proximity,[],1);
             noseBox = noseBox(nosePos,:);    
-%             fullFace = insertObjectAnnotation(face,'rectangle',noseBox,'nose');
-%             imshow(fullFace);
-%             pause;
-            
+           
             %% Operate on the NOSE
             noseCX = noseBox(1,1) + (noseBox(1,3)/2) + faceBox(1);
             noseCY = noseBox(1,2) + (noseBox(1,4)/2);
 
             eyeZone=imcrop(face,[1,1,size(face,2),noseCY]);
             
-            %Detect Eyes
+            %% Detect Eyes only in the region above the nose
             eyeBox=step(eyeDetector,eyeZone);
             if ( ~size(eyeBox,1) )
                 continue;
@@ -144,12 +136,8 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
             eyeCY1 = eyeBox(1,2)+ d + faceBox(2);
             eyeCX2 = eyeBox(2,1)+ e + faceBox(1);
             eyeCY2 = eyeBox(2,2)+ f + faceBox(2);
-
-%             fullFace = insertObjectAnnotation(face,'rectangle',eyeBox,'eye');
-%             imshow(fullFace);
-%             pause;
             
-            %% Detect MOUTH 
+            %% Detect MOUTH in region below the nose 
             m=[1,noseCY,size(face,1),((size(face,2))-noseCY)];
             mouth=imcrop(face,m);
 
@@ -171,11 +159,7 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
             mouthCX = mouthBox(1,1) + (mouthBox(1,3)/2) + faceBox(1);
             mouthCY = mouthBox(1,2) + (mouthBox(1,4)/2) + faceBox(2);
 
-%             fullFace = insertObjectAnnotation(face,'rectangle',mouthBox,'mouth');
-%             imshow(fullFace);
-%             pause;
-%             
-            %% Get all CORRESPONDENCES
+            %% Get all CORRESPONDENCES ( Centers of face landmarks )
             corres =[[eyeCX1;eyeCX2;noseCX;mouthCX], [eyeCY1;eyeCY2;noseCY;mouthCY]];
 
             %% Get all CORNERS to build convex hull
@@ -204,13 +188,9 @@ function [cornerX, cornerY, corres, faceBox] = getCorrespondencesTest(frame, svm
             end
         end
         if ( size(corres,1) )
-            corres
             break;
         else
             faceBox = [];
         end
     end
-    % ann_img = insertObjectAnnotation(image,'rectangle',faceBboxes,'Detection');
-    % imshow(ann_img);
-    % pause;
 end

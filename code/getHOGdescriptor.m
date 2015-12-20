@@ -12,9 +12,8 @@ function [ hogDesc ] = getHOGdescriptor( gradAngles, gradMags, numBins, signed, 
     %   the block ( for block level normalization ) [no_of_pixels_in_y no_of_pixels_in_x]
     numVertCells = size(gradMags,1)/cellSize(1);
     numHortCells = size(gradMags,2)/cellSize(2);
-    numVertBlocks = size(gradMags,1)/blockSize(1);
-    numHortBlocks = size(gradMags,2)/blockSize(2);
-    
+
+    %% Compute HOG for each cell
     hist = zeros(numVertCells,numHortCells,numBins);
     for row=1:numVertCells
         yStartCell = (row-1)*cellSize(2)+1;
@@ -22,13 +21,13 @@ function [ hogDesc ] = getHOGdescriptor( gradAngles, gradMags, numBins, signed, 
         for col=1:numHortCells
             xStartCell = (col-1)*cellSize(1)+1;
             xEndCell = xStartCell + cellSize(1)-1;
-            %cellvals = [yStartCell yEndCell xStartCell xEndCell]
             gradAng = gradAngles(yStartCell:yEndCell,xStartCell:xEndCell);
             gradMag = gradMags(yStartCell:yEndCell,xStartCell:xEndCell);
-            %computeHog(gradAng,gradMag,numBins,signed)
             hist(row,col,:) = computeHog(gradAng,gradMag,numBins,signed);
         end
     end      
+    
+    %% Computing normalization over overlapping blocks
     hogDesc = [];
     for row=1:numVertCells-1
         for col=1:numHortCells-1

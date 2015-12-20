@@ -18,18 +18,20 @@ function [ boundingBoxes, scores ] = detectFace( img, windowSize, numBins, signe
     %   boundingBoxes - c by 4 matrix of bounding box for a face in an image
     %   where a bounding box is [cornerX,cornerY,width,height]
     %   score - Svm confidence score in each prediction
+    
+    %% Compute gradients for whole image
     [gradAngles, gradMags] = computeImageGradients(img,0);
     yStartCell = 1;
     yEndCell = yStartCell + windowSize(1)-1;
     bboxDesc = [];
+    
+    %% Compute HOG descriptors for each window sliding over be a blockStride
     while( yEndCell < size(img,1) )
         xStartCell = 1;
         xEndCell = xStartCell + windowSize(2)-1;
         while( xEndCell < size(img,2) )
-            %cellvals = [yStartCell yEndCell xStartCell xEndCell]
             gradAng = gradAngles(yStartCell:yEndCell,xStartCell:xEndCell);
             gradMag = gradMags(yStartCell:yEndCell,xStartCell:xEndCell);
-            %computeHog(gradAng,gradMag,numBins,signed)
             hogDesc = getHOGdescriptor(gradAng,gradMag,numBins,signed,cellSize,blockSize);
             bboxDesc = [bboxDesc; xStartCell,yStartCell,hogDesc'];
             xStartCell = xStartCell + blockStride;
@@ -38,6 +40,8 @@ function [ boundingBoxes, scores ] = detectFace( img, windowSize, numBins, signe
         yStartCell = yStartCell + blockStride;
         yEndCell = yStartCell + windowSize(1)-1;
     end
+    
+    %% Predicting the presence of a face with score for each positive detection for the trained SVM face detection model
     boundingBoxes = [];
     scores = [];
     if ( size(bboxDesc,1) )
